@@ -2,6 +2,7 @@ package com.flow.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,54 +31,28 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
 
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http)
             throws Exception {
 
         http
-
-                // Enable CORS
                 .cors(cors -> cors
-                        .configurationSource(
-                                corsConfigurationSource()
-                        )
+                        .configurationSource(corsConfigurationSource())
                 )
-
-                // Disable CSRF for REST APIs
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public endpoints
-
                         .requestMatchers("/api/auth/register").permitAll()
-
                         .requestMatchers("/api/auth/login").permitAll()
-
-                        .requestMatchers("/api/health")
-                        .permitAll()
-
-                        // Webhook endpoint public
-                        .requestMatchers("/api/webhook/**")
-                        .permitAll()
-
-                        // Swagger endpoints
-                        .requestMatchers("/swagger-ui.html")
-                        .permitAll()
-
-                        .requestMatchers("/swagger-ui/**")
-                        .permitAll()
-
-                        .requestMatchers("/v3/api-docs/**")
-                        .permitAll()
-
-                        // All other APIs require authentication
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/api/webhook/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-
-                // THIS PART ADDED FOR 403
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(
                                 (request, response, authException) -> {
@@ -88,20 +63,10 @@ public class SecurityConfig {
                                 }
                         )
                 )
-
-                // Stateless session (JWT based)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // Authentication provider
-                .authenticationProvider(
-                        authenticationProvider()
-                )
-
-                // JWT filter before username/password filter
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -110,58 +75,30 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // CORS Configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration configuration =
-                new CorsConfiguration();
-
+        CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(
-                List.of("http://localhost:3000")
+                List.of(allowedOrigins.split(","))
         );
-
         configuration.setAllowedMethods(
-                List.of(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "OPTIONS"
-                )
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
         );
-
-        configuration.setAllowedHeaders(
-                List.of("*")
-        );
-
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
-
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-
         DaoAuthenticationProvider provider =
                 new DaoAuthenticationProvider();
-
-        provider.setUserDetailsService(
-                userDetailsService
-        );
-
-        provider.setPasswordEncoder(
-                passwordEncoder()
-        );
-
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
@@ -169,13 +106,11 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config
     ) throws Exception {
-
         return config.getAuthenticationManager();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 }

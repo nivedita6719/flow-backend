@@ -8,16 +8,13 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:flowuser}
     password: ${SPRING_DATASOURCE_PASSWORD:flowpass}
     driver-class-name: org.postgresql.Driver
-
     hikari:
       connection-init-sql: SET TIME ZONE 'UTC'
 
   jpa:
     hibernate:
       ddl-auto: update
-
     show-sql: true
-
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -27,11 +24,12 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
 
 server:
   port: 8080
-
-
 
 springdoc:
   api-docs:
@@ -43,16 +41,14 @@ springdoc:
     operations-sorter: alpha
     display-request-duration: true
     try-it-out-enabled: true
-
   show-actuator: false
 
 app:
   jwt:
     secret: ${APP_JWT_SECRET:flow-super-secret-key-minimum-256-bits-long-for-security}
     expiration: ${APP_JWT_EXPIRATION:86400000}
-
-
-
   gemini:
-    api-key: AIzaSyBzxxMmSUaoN8RPwctvQW1idUgtm_o7Wmw
-    api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+    api-key: ${APP_GEMINI_API_KEY:AIzaSyBzxxMmSUaoN8RPwctvQW1idUgtm_o7Wmw}
+    api-url: ${APP_GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent}
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:3000}
